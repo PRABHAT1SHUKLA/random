@@ -60,6 +60,16 @@ if (foundUser) {
   
 });
 
+app.post('/onramp/inr', (req: Request, res: Response) => {
+  const { userId, amount } = req.body;
+  if (INR_BALANCES[userId]) {
+    INR_BALANCES[userId].balance += amount;
+    res.json(INR_BALANCES[userId]);
+  } else {
+    res.status(404).send('User not found');
+  }
+});
+
 app.post('/order/no', (req: Request, res: Response) => {
   const { userId, stockSymbol, quantity, price } = req.body;
 
