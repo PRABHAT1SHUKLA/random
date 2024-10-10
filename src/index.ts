@@ -1,5 +1,6 @@
 import express, { Request, Response } from 'express';
 import bodyParser from 'body-parser';
+import { INRBalances, OrderBook, StockBalances, StockOrderBook } from './types';
 
 
 
@@ -10,12 +11,12 @@ const app = express()
 app.use(bodyParser.json())
 const port = 8000
 
-let INR_BALANCES ={
+let INR_BALANCES: INRBalances ={
   user1: { balance: 10000, locked: 0 },
   user2: { balance: 20000, locked: 5000 },
 };
 
-let ORDERBOOK : any= {
+let ORDERBOOK : OrderBook= {
   BTC_USDT_10_Oct_2024_9_30: {
     yes: {
       '9.5': { total: 12, orders: { user1: 2, user2: 10 } },
@@ -26,7 +27,7 @@ let ORDERBOOK : any= {
 };
 
 
-let STOCK_BALANCES : any= {
+let STOCK_BALANCES :any= {
   user1: {
     BTC_USDT_10_Oct_2024_9_30: {
       yes: { quantity: 1, locked: 0 },
