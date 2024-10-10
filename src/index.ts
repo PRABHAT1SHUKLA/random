@@ -109,6 +109,38 @@ app.post('/order/no', (req: Request, res: Response) => {
   }
 });
 
+app.post('/order/yes', (req: Request, res: Response) => {
+  const { userId, stockSymbol, quantity, price } = req.body;
+
+  if (INR_BALANCES[userId] && STOCK_BALANCES[userId]) {
+    const totalCost = quantity * price;
+
+    if (INR_BALANCES[userId].balance >= totalCost) {
+      // Deduct the amount and lock the balance
+      INR_BALANCES[userId].balance -= totalCost;
+      INR_BALANCES[userId].locked += totalCost;
+
+      // Add the order to the order book
+      if (!ORDERBOOK[stockSymbol]) {
+        ORDERBOOK[stockSymbol] = { yes: {}, no: {} } as StockOrderBook;
+      }
+      if (!ORDERBOOK[stockSymbol].yes[price]) {
+        ORDERBOOK[stockSymbol].yes[price] = { total: 0, orders: {} };
+      }
+      ORDERBOOK[stockSymbol].yes[price].total += quantity;
+      ORDERBOOK[stockSymbol].yes[price].orders[userId] =
+        (ORDERBOOK[stockSymbol].yes[price].orders[userId] || 0) + quantity;
+
+      res.json({ message: 'Order placed successfully' });
+    } else {
+      res.status(400).send('Insufficient balance');
+    }
+  } else {
+    res.status(404).send('User not found');
+  }
+});
+
+
 app.listen(port, () => {
   console.log(`Server is running at http://localhost:${port}`)
 })
