@@ -70,6 +70,16 @@ app.post('/onramp/inr', (req: Request, res: Response) => {
   }
 });
 
+app.get('/balance/stock/:userId', (req: Request, res: Response) => {
+  const userId = req.params.userId;
+  const stockBalance = STOCK_BALANCES[userId];
+  if (stockBalance) {
+    res.json(stockBalance);
+  } else {
+    res.status(404).send('User not found');
+  }
+});
+
 app.post('/order/no', (req: Request, res: Response) => {
   const { userId, stockSymbol, quantity, price } = req.body;
 
