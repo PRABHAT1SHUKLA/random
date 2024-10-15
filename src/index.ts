@@ -13,43 +13,6 @@ app.use(bodyParser.json())
 const port = 8000
 
 
-// app.post('order/yes/sell', (req: Request, res: Response) => {
-
-//   const { userId, stockSymbol, quantityneed, price } = req.body;
-
-//   if (STOCK_BALANCES[userId] && STOCK_BALANCES[userId][stockSymbol]) {
-
-//     const stockBalance = STOCK_BALANCES.userId.stockSymbol.yes.quantity
-
-
-
-
-
-
-
-
-
-//     if (stockBalance <= quantityneed) {
-//       res.status(400).send("not enough quantity to sell")
-
-//     }
-
-
-
-
-
-
-//   }
-
-//   ORDERBOOK[stockSymbol].yes[price] = {
-//     total: ,
-//     orders: {
-//       userId:
-//     }
-
-//   }
-
-// })
 
 
 
@@ -64,6 +27,8 @@ let ORDERBOOK: OrderBook = {
   btc: {
     yes: {
       '9.5': { total: 12, orders: { user1: 2, user2: 10 } },
+      '10.5': { total: 3, orders: { user1: 3 } },
+      '7.5': { total: 4, orders: { user1: 3 } }
     },
     no: {
 
@@ -71,7 +36,97 @@ let ORDERBOOK: OrderBook = {
   }
 };
 
+let INR_BALANCES: INRBalances = {
+  user1: { balance: 10000, locked: 0 },
+  user2: { balance: 20000, locked: 5000 },
+  user3: { balance: 50000, locked: 10000 }
+};
 
+app.post('/onramp/inr' , (req: Request , res: Response)=>{
+  const { user_id , amount } = req.body;
+  INR_BALANCES[user_id].balance+= amount;
+  res.status(200).send(`onramped balance for ${user_id} with amount ${amount}`)
+})
+
+// app.post('/order/buy/yes', (req: Request, res: Response) => {
+//   const { userId, StockSymbol, quantity, price } = req.body
+
+//   const requiredAmount = price * quantity
+
+//   console.log(requiredAmount)
+//   if (!ORDERBOOK[StockSymbol]) {
+//     res.status(404).send(`Sorry market with ${StockSymbol} does not exist`)
+//   }
+
+//   console.log(Object.keys(ORDERBOOK[StockSymbol].yes))
+
+//   if (INR_BALANCES[userId]) {
+//     if (INR_BALANCES[userId].balance >= requiredAmount) {
+//       INR_BALANCES[userId].balance -= requiredAmount
+//       INR_BALANCES[userId].locked += requiredAmount
+
+
+//       let priceavailable = Object.keys(ORDERBOOK[StockSymbol].yes)
+
+//       priceavailable.sort()
+//       // try to increment balance of all the user in the available user object array 
+//       priceavailable.map((priceofStock) => {
+//         let desiredquantity = quantity
+//         //loop for instantiating all available users across the array to find price below the required price in the object
+//         if (price >= priceofStock) {
+//           const quantityAvailable = ORDERBOOK[StockSymbol].yes[priceofStock].total
+//           if (quantityAvailable >= desiredquantity) {
+//             let cutlocked = priceofStock * desiredquantity
+//             ORDERBOOK[StockSymbol].yes[priceofStock].total -= desiredquantity
+//             const UsersObject = ORDERBOOK[StockSymbol].yes[priceofStock].orders
+//             const availableUsers = Object.keys(UsersObject)
+//             //update the user balance according to the prices
+//             availableUsers.map((user) => {
+//               if (ORDERBOOK[StockSymbol].yes[priceofStock].orders[user] <= desiredquantity) {
+//                 let usergains = ORDERBOOK[StockSymbol].yes[priceofStock].orders[user] * priceofStock
+//                 desiredquantity -= ORDERBOOK[StockSymbol].yes[priceofStock].orders[user]
+//                 ORDERBOOK[StockSymbol].yes[priceofStock].orders[user] = 0
+//                 INR_BALANCES[user].balance += usergains
+
+
+//               } else {
+//                 let leftinOrderBook = ORDERBOOK[StockSymbol].yes[priceofStock].orders[user] - desiredquantity
+//                 INR_BALANCES[user].balance += desiredquantity * priceofStock
+//                 ORDERBOOK[StockSymbol].yes[priceofStock].orders[user] = leftinOrderBook
+
+
+
+//               }
+//               INR_BALANCES[user].locked -= cutlocked
+
+//               res.send("buy order matched")
+//             }
+
+//             )
+
+//           }
+//         }
+
+
+//       })
+
+
+
+//       res.send(Object.keys(ORDERBOOK[StockSymbol].yes))
+
+
+//     }else{
+//       res.status(302).send("not sufficient balance")
+//     }
+//   }
+
+
+//   res.send("sorry")
+
+
+
+
+// })
 
 
 
@@ -120,11 +175,6 @@ app.post("/symbol/create/:stockSymbol", (req: Request, res: Response) => {
 
 })
 
-let INR_BALANCES: INRBalances = {
-  user1: { balance: 10000, locked: 0 },
-  user2: { balance: 20000, locked: 5000 },
-  user3: { balance: 50000, locked: 10000 }
-};
 
 
 app.get('/balance/inr/:userId', (req: Request, res: Response) => {
@@ -142,22 +192,11 @@ app.get('/balance/inr/:userId', (req: Request, res: Response) => {
     res.status(404).send('User not found');
   }
 
-});
-
-app.get('/balance/stock/:userId ', (req: Request, res: Response) => {
-  const userId = req.params.userId,
-  const foundUser = Object.entries(STOCK_BALANCES).find(([key]) => key === userId)
-
-
-  console.log(foundUser)
-
-  if (foundUser) {
-    return res.status(200).send(STOCK_BALANCES(userId))
-  } else {
-    return res.status(404).send("user not found")
-  }
-
 })
+
+
+
+
 
 
 // app.post('/trade/mint', (req: Request, res: Response) => {
@@ -335,68 +374,70 @@ app.post('/order/no', (req: Request, res: Response) => {
 
 
 
-app.post('/order/yes/sell', (req: Request, res: Response) => {
-  const { userId, stockSymbol, quantity, price } = req.body;
+// app.post('/order/yes/sell', (req: Request, res: Response) => {
+//   const { userId, stockSymbol, quantity, price } = req.body;
 
-  if (INR_BALANCES[userId] && STOCK_BALANCES[userId]) {
-    const totalCost = quantity * price;
+//   if (INR_BALANCES[userId] && STOCK_BALANCES[userId]) {
+//     const totalCost = quantity * price;
 
-    if (INR_BALANCES[userId].balance >= totalCost) {
-      // Deduct the amount and lock the balance
-      INR_BALANCES[userId].balance -= totalCost;
-      INR_BALANCES[userId].locked += totalCost;
+//     if (INR_BALANCES[userId].balance >= totalCost) {
+//       // Deduct the amount and lock the balance
+//       INR_BALANCES[userId].balance -= totalCost;
+//       INR_BALANCES[userId].locked += totalCost;
 
-      // Add the order to the order book
-      if (!ORDERBOOK[stockSymbol]) {
-        ORDERBOOK[stockSymbol] = { yes: {}, no: {} } as StockOrderBook;
-      }
-      if (!ORDERBOOK[stockSymbol].yes[price]) {
-        ORDERBOOK[stockSymbol].yes[price] = { total: 0, orders: {} };
-      }
-      ORDERBOOK[stockSymbol].yes[price].total += quantity;
-      ORDERBOOK[stockSymbol].yes[price].orders[userId] =
-        (ORDERBOOK[stockSymbol].yes[price].orders[userId] || 0) + quantity;
+//       // Add the order to the order book
+//       if (!ORDERBOOK[stockSymbol]) {
+//         ORDERBOOK[stockSymbol] = { yes: {}, no: {} } as StockOrderBook;
+//       }
+//       if (!ORDERBOOK[stockSymbol].yes[price]) {
+//         ORDERBOOK[stockSymbol].yes[price] = { total: 0, orders: {} };
+//       }
+//       ORDERBOOK[stockSymbol].yes[price].total += quantity;
+//       ORDERBOOK[stockSymbol].yes[price].orders[userId] =
+//         (ORDERBOOK[stockSymbol].yes[price].orders[userId] || 0) + quantity;
 
-      res.json({ message: 'Order placed successfully' });
-    } else {
-      res.status(400).send('Insufficient balance');
-    }
-  } else {
-    res.status(404).send('User not found');
-  }
-});
+//       res.json({ message: 'Order placed successfully' });
+//     } else {
+//       res.status(400).send('Insufficient balance');
+//     }
+//   } else {
+//     res.status(404).send('User not found');
+//   }
+// });
 
-app.post(" /user/create/:userId", (req: Request, res: Response) => {
+// app.post(" /user/create/:userId", (req: Request, res: Response) => {
 
-  console.log("heelo")
-  const userId = req.params.userId;
-  const foundUser = Object.entries(INR_BALANCES).find(([key]) => key === userId);
-
-
-  console.log("reques reached here")
-  if (foundUser) {
-    res.status(100).send("User already exists")
-  }
-
-  INR_BALANCES[userId].locked = 0,
-    INR_BALANCES[userId].balance = 0,
+//   console.log("heelo")
+//   const userId = req.params.userId;
+//   const foundUser = Object.entries(INR_BALANCES).find(([key]) => key === userId);
 
 
-    res.json({
-      userId: userId
-    })
-})
+//   console.log("reques reached here")
+//   if (foundUser) {
+//     res.status(100).send("User already exists")
+//   }
 
-app.post("/order/sell", (req: Request, res: Response) => {
-
-
-
-})
+//   INR_BALANCES[userId].locked = 0,
+//     INR_BALANCES[userId].balance = 0,
 
 
-app.post("/order/buy", (req: Request, res: Response) => {
+//     res.json({
+//       userId: userId
+//     })
+// })
 
-})
+// app.post("/order/sell", (req: Request, res: Response) => {
+
+
+
+
+
+// })
+
+
+// app.post("/order/buy", (req: Request, res: Response) => {
+
+// })
 
 
 
