@@ -1,6 +1,6 @@
 import express, { Request, Response } from 'express';
 import bodyParser from 'body-parser';
-import { INRBalances, OrderBook , StockBalances } from './types';
+import { INRBalances, OrderBook, StockBalances } from './types';
 
 
 const app = express()
@@ -51,16 +51,16 @@ let STOCK_BALANCES: StockBalances = {
 
 app.post("/user/create/:userId", (req: Request, res: Response) => {
 
-    console.log("hello")
-    const userId = req.params.userId;
-   if(INR_BALANCES[userId]){
+  console.log("hello")
+  const userId = req.params.userId;
+  if (INR_BALANCES[userId]) {
     res.send("user already exists")
-   }
+  }
 
-     
-  INR_BALANCES[userId]={
-   locked:0,
-   balance:0
+
+  INR_BALANCES[userId] = {
+    locked: 0,
+    balance: 0
   }
 
   res.send(`User with ${userId}  created`)
@@ -75,7 +75,7 @@ app.post('/onramp/inr', (req: Request, res: Response) => {
     res.status(400).send('Invalid amount format');
   }
   if (INR_BALANCES[userId]) {
-   
+
     INR_BALANCES[userId].balance += num;
     res.status(200).json({
       "msg": `onramped ${userId} with ${amount}`
@@ -105,19 +105,19 @@ app.post("/symbol/create/:stockSymbol", (req: Request, res: Response) => {
 
 app.get('/balance/inr/:userId', (req: Request, res: Response) => {
   const userId = req.params.userId;
-  
-  if(!INR_BALANCES[userId]){
+
+  if (!INR_BALANCES[userId]) {
     res.send(`user with ${userId} does not exist`)
   }
 
-  
+
   res.send(`${INR_BALANCES[userId].balance}`)
 })
 
 app.get('/balance/stock/:userId', (req: Request, res: Response) => {
   const userId = req.params.userId;
-  if ( STOCK_BALANCES[userId]) {
-    res.json( STOCK_BALANCES[userId]);
+  if (STOCK_BALANCES[userId]) {
+    res.json(STOCK_BALANCES[userId]);
   } else {
     res.status(404).send('User not found');
   }
@@ -186,41 +186,73 @@ app.post('/trade/mint', (req: Request, res: Response) => {
   }
 });
 
-app.post('/order/sell',(req:Request , res:Response)=>{
-  const {userId,stockSymbol,quantity,price, stockType}=req.body;
+app.post('/order/sell', (req: Request, res: Response) => {
+  const { userId, stockSymbol, quantity, price, stockType } = req.body;
 
-  if(stockType!="yes"&& stockType!="no"){
-    res.status(400).send({message:"Invalid stock type" });
+  // Ensure the stock symbol exists in the ORDERBOOK
+  if (!ORDERBOOK[stockSymbol]) {
+    // Initialize the stockSymbol with empty yes/no objects if it doesn't exist
+    ORDERBOOK[stockSymbol] = {
+      yes: {},
+      no: {}
+    };
   }
-  if(!STOCK_BALANCES[userId] || !STOCK_BALANCES[userId][stockSymbol]){
+
+  if (stockType != "yes" && stockType != "no") {
+    res.status(400).send({ message: "Invalid stock type" });
+  }
+  if (!STOCK_BALANCES[userId] || !STOCK_BALANCES[userId][stockSymbol]) {
     res.send(`sorry user doesn't have any stockbalance in ${stockSymbol} market`)
   }
 
-  if(stockType=="yes"){
-     if(STOCK_BALANCES[userId][stockSymbol].yes!.quantity>=quantity){
-        
-         STOCK_BALANCES[userId][stockSymbol].yes!.locked+=quantity
-         STOCK_BALANCES[userId][stockSymbol].yes!.quantity-=quantity
+  if (stockType == "yes") {
+    if (STOCK_BALANCES[userId][stockSymbol].yes!.quantity >= quantity) {
 
+      STOCK_BALANCES[userId][stockSymbol].yes!.locked += quantity
+      STOCK_BALANCES[userId][stockSymbol].yes!.quantity -= quantity
+      //  if(ORDERBOOK[stockSymbol].yes[price]){
+      //   ORDERBOOK[stockSymbol].yes[price].total+=quantity
+      //   ORDERBOOK[stockSymbol].yes[price].orders.userId+=quantity
 
-         if(ORDERBOOK[stockSymbol].yes[price]){
-          ORDERBOOK[stockSymbol].yes[price].total+=quantity
-          ORDERBOOK[stockSymbol].yes[price].orders.userId+=quantity
-           
-         }
+      //  }
 
-         ORDERBOOK[stockSymbol].yes.userId.total=
-          // const pricesOfStock = Object.keys(STOCK_BALANCES[userId][stockSymbol].yes!)
-          // pricesOfStock.sort()
-          // pricesOfStock.map((key)=>{
-          //      if(key==price){
-          //       ORDERBOOK[stockSymbol].yes.key.total+=quantity
-          //       ORDERBOOK[stockSymbol].yes.key.orders.userId+=quantity
-                
-          //      }
-          // })
-         
-     }
+      //  ORDERBOOK[stockSymbol].yes[price] = {
+      //   total: ORDERBOOK[stockSymbol].yes[price].total || 0,
+      //   orders: ORDERBOOK[stockSymbol].yes[price].orders || {userId:0},
+      //  }
+      // const pricesOfStock = Object.keys(STOCK_BALANCES[userId][stockSymbol].yes!)
+      // pricesOfStock.sort()
+      // pricesOfStock.map((key)=>{
+      //      if(key==price){
+      //       ORDERBOOK[stockSymbol].yes.key.total+=quantity
+      //       ORDERBOOK[stockSymbol].yes.key.orders.userId+=quantity
+
+      //      }
+      // })
+     // Ensure the price exists in the 'yes' side of the order book
+      if (ORDERBOOK[stockSymbol].yes[price]) {
+        // Price exists, so update the total and the specific user's order
+        ORDERBOOK[stockSymbol].yes[price].total += quantity;
+
+        // Check if the user already has an order at this price, if not, initialize it
+        if (ORDERBOOK[stockSymbol].yes[price].orders[userId]) {
+          ORDERBOOK[stockSymbol].yes[price].orders[userId] += quantity;
+        } else {
+          ORDERBOOK[stockSymbol].yes[price].orders[userId] = quantity;
+        }
+      } else {
+        // Price doesn't exist, so create a new entry for this price
+        ORDERBOOK[stockSymbol].yes[price] = {
+          total: quantity, // Initialize with the given quantity
+          orders: {
+            [userId]: quantity // Initialize the user's order with the given quantity
+          }
+        };
+      }
+
+    }else{
+      res.send("Sorry u don't have sufficient stockBalance")
+    }
   }
 })
 
