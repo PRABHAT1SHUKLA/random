@@ -28,6 +28,8 @@ let ORDERBOOK: OrderBook = {
   }
 };
 
+
+
 let INR_BALANCES: INRBalances = {
   user1: { balance: 10000, locked: 0 },
   user2: { balance: 20000, locked: 5000 },
@@ -187,7 +189,39 @@ app.post('/trade/mint', (req: Request, res: Response) => {
 app.post('/order/sell',(req:Request , res:Response)=>{
   const {userId,stockSymbol,quantity,price, stockType}=req.body;
 
-  if(stockType!="yes"|| stockType!="no")
+  if(stockType!="yes"&& stockType!="no"){
+    res.status(400).send({message:"Invalid stock type" });
+  }
+  if(!STOCK_BALANCES[userId] || !STOCK_BALANCES[userId][stockSymbol]){
+    res.send(`sorry user doesn't have any stockbalance in ${stockSymbol} market`)
+  }
+
+  if(stockType=="yes"){
+     if(STOCK_BALANCES[userId][stockSymbol].yes!.quantity>=quantity){
+        
+         STOCK_BALANCES[userId][stockSymbol].yes!.locked+=quantity
+         STOCK_BALANCES[userId][stockSymbol].yes!.quantity-=quantity
+
+
+         if(ORDERBOOK[stockSymbol].yes[price]){
+          ORDERBOOK[stockSymbol].yes[price].total+=quantity
+          ORDERBOOK[stockSymbol].yes[price].orders.userId+=quantity
+           
+         }
+
+         ORDERBOOK[stockSymbol].yes.userId.total=
+          // const pricesOfStock = Object.keys(STOCK_BALANCES[userId][stockSymbol].yes!)
+          // pricesOfStock.sort()
+          // pricesOfStock.map((key)=>{
+          //      if(key==price){
+          //       ORDERBOOK[stockSymbol].yes.key.total+=quantity
+          //       ORDERBOOK[stockSymbol].yes.key.orders.userId+=quantity
+                
+          //      }
+          // })
+         
+     }
+  }
 })
 
 
