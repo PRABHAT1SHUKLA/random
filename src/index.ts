@@ -184,7 +184,11 @@ app.post('/trade/mint', (req: Request, res: Response) => {
   }
 });
 
-app.post('/')
+app.post('/order/sell',(req:Request , res:Response)=>{
+  const {userId,stockSymbol,quantity,price, stockType}=req.body;
+
+  if(stockType!="yes"|| stockType!="no")
+})
 
 
 
