@@ -32,5 +32,37 @@ let STOCK_BALANCES: any = {
 
 
 
+app.post('/trade/mint', (req: Request, res: Response) => {
+  const { userId, stockSymbol, quantity, price } = req.body;
 
-app.post("/order/sell" , )
+  const requiredBalance = quantity*price;
+
+
+  if(!ORDERBOOK[stockSymbol]){
+
+    res.status(404).send(`market with given stockSymbol ${stockSymbol} does not exist .`)
+  }
+
+  if(INR_BALANCES[userId].balance>=requiredBalance ){
+    
+     INR_BALANCES[userId].balance-=requiredBalance;
+     INR_BALANCES[userId].locked+=requiredBalance;
+
+     STOCK_BALANCES[userId][stockSymbol].yes.quantity+=quantity;
+     STOCK_BALANCES[userId][stockSymbol].no.quantity+=quantity;
+     INR_BALANCES[userId].locked-=requiredBalance
+
+     res.status(200).send({
+      message: `Minted ${quantity} 'no' tokens for user ${userId}`,
+      orderBook: ORDERBOOK[stockSymbol]
+    });
+}else{
+  res.status(400).send({ message: 'Insufficient balance' });
+}
+});
+
+
+
+
+
+

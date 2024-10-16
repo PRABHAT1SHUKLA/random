@@ -26,6 +26,15 @@ export interface OrderBook {
   [key: string]: StockOrderBook; // stockSymbol -> orders
 }
 
-export interface StockBalances {
-  [key: string]: Record<string, StockBalance>; // userId -> stockSymbol -> balance
-}
+type Stock = {
+  yes?: { quantity: number; locked: number };
+  no?: { quantity: number; locked: number };
+};
+
+type UserStockBalances = {
+  [market: string]: Stock;
+};
+
+export type StockBalances = {
+  [userId: string]: UserStockBalances;
+};
