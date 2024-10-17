@@ -315,7 +315,7 @@ app.post('/order/sell', (req: Request, res: Response) => {
   }
 })
 
-app.post('/order/buy', (req: Request, res: Response) => {
+app.post('/order/buy', async(req: Request, res: Response) => {
   const { userId,
     stockSymbol,
     quantity,
@@ -332,8 +332,16 @@ app.post('/order/buy', (req: Request, res: Response) => {
     if(requiredBalance<INR_BALANCES[userId].balance){
       res.send(`{userId} doesn't have sufficient balance to buy these stocks`)
     }
+
+    INR_BALANCES[userId].balance-=requiredBalance
+    INR_BALANCES[userId].locked+=requiredBalance
     
-    
+    if(stockType=="yes"){
+      if(!ORDERBOOK[stockSymbol].yes[price]){
+         const response = await fetch("/order/buy")
+      }
+
+    }
      
     
 
