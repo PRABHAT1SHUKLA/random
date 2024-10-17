@@ -86,6 +86,13 @@ app.post('/onramp/inr', (req: Request, res: Response) => {
 
 });
 
+app.get('/orderbook' , (req:Request , res: Response)=>{
+   if(ORDERBOOK){
+    res.status(200).send(ORDERBOOK)
+   }else{
+    res.status(404).send('Orderbook not found')
+   }
+})
 
 app.post("/symbol/create/:stockSymbol", (req: Request, res: Response) => {
 
@@ -239,7 +246,7 @@ app.post('/order/sell', (req: Request, res: Response) => {
           ORDERBOOK[stockSymbol].yes[price].orders[userId] =Number(quantity);
         }
 
-        res.send(`sell order for ${userId} placed in ${stockSymbol} market`)
+        res.send(`sell order for yes stocks for ${userId} placed in ${stockSymbol} market`)
       } else {
         // Price doesn't exist, so create a new entry for this price
         ORDERBOOK[stockSymbol].yes[price] = {
@@ -248,7 +255,7 @@ app.post('/order/sell', (req: Request, res: Response) => {
             [userId]: quantity // Initialize the user's order with the given quantity
           }
         };
-        res.send(`sell order for ${userId} placed in ${stockSymbol} market`)
+        res.send(`sell order for yes stocks for ${userId} placed in ${stockSymbol} market`)
       }
 
     }else{
@@ -279,27 +286,27 @@ app.post('/order/sell', (req: Request, res: Response) => {
       //      }
       // })
      // Ensure the price exists in the 'yes' side of the order book
-      if (ORDERBOOK[stockSymbol].yes[price]) {
+      if (ORDERBOOK[stockSymbol].no[price]) {
         // Price exists, so update the total and the specific user's order
-        ORDERBOOK[stockSymbol].yes[price].total += Number(quantity);
+        ORDERBOOK[stockSymbol].no[price].total += Number(quantity);
 
         // Check if the user already has an order at this price, if not, initialize it
-        if (ORDERBOOK[stockSymbol].yes[price].orders[userId]) {
-          ORDERBOOK[stockSymbol].yes[price].orders[userId] += Number(quantity);
+        if (ORDERBOOK[stockSymbol].no[price].orders[userId]) {
+          ORDERBOOK[stockSymbol].no[price].orders[userId] += Number(quantity);
         } else {
-          ORDERBOOK[stockSymbol].yes[price].orders[userId] =Number(quantity);
+          ORDERBOOK[stockSymbol].no[price].orders[userId] =Number(quantity);
         }
 
-        res.send(`sell order for ${userId} placed in ${stockSymbol} market`)
+        res.send(`sell order for no stocks for  ${userId} placed in ${stockSymbol} market`)
       } else {
         // Price doesn't exist, so create a new entry for this price
-        ORDERBOOK[stockSymbol].yes[price] = {
+        ORDERBOOK[stockSymbol].no[price] = {
           total: quantity, // Initialize with the given quantity
           orders: {
             [userId]: quantity // Initialize the user's order with the given quantity
           }
         };
-        res.send(`sell order for ${userId} placed in ${stockSymbol} market`)
+        res.send(`sell order for no stocks for ${userId} placed in ${stockSymbol} market`)
       }
 
     }else{
