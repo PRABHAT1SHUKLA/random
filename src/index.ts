@@ -1,6 +1,7 @@
 import express, { Request, Response } from 'express';
 import bodyParser from 'body-parser';
 import { INRBalances, OrderBook, StockBalances } from './types';
+import axios from "axios"
 
 
 const app = express()
@@ -338,7 +339,13 @@ app.post('/order/buy', async(req: Request, res: Response) => {
     
     if(stockType=="yes"){
       if(!ORDERBOOK[stockSymbol].yes[price]){
-         const response = await fetch("/order/buy")
+        const response = await axios.post('http://localhost:8000/order/sell', {
+          userId,
+          stockSymbol,
+          quantity,
+          price,
+          stockType:"no"
+        });
       }
 
     }
