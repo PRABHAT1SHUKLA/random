@@ -86,12 +86,12 @@ app.post('/onramp/inr', (req: Request, res: Response) => {
 
 });
 
-app.get('/orderbook' , (req:Request , res: Response)=>{
-   if(ORDERBOOK){
+app.get('/orderbook', (req: Request, res: Response) => {
+  if (ORDERBOOK) {
     res.status(200).send(ORDERBOOK)
-   }else{
+  } else {
     res.status(404).send('Orderbook not found')
-   }
+  }
 })
 
 app.post("/symbol/create/:stockSymbol", (req: Request, res: Response) => {
@@ -174,12 +174,12 @@ app.post('/trade/mint', (req: Request, res: Response) => {
 
   if (INR_BALANCES[userId] && INR_BALANCES[userId].balance >= requiredBalance) {
     // Deduct balance and lock funds
-    INR_BALANCES[userId].balance = Number(INR_BALANCES[userId].balance)-requiredBalance;
-    INR_BALANCES[userId].locked =Number(INR_BALANCES[userId].locked)+requiredBalance;
+    INR_BALANCES[userId].balance = Number(INR_BALANCES[userId].balance) - requiredBalance;
+    INR_BALANCES[userId].locked = Number(INR_BALANCES[userId].locked) + requiredBalance;
 
     // Mint stocks
-    STOCK_BALANCES[userId][stockSymbol].yes!.quantity = Number(STOCK_BALANCES[userId][stockSymbol].yes!.quantity)+Number(quantity);
-    STOCK_BALANCES[userId][stockSymbol].no!.quantity =Number( STOCK_BALANCES[userId][stockSymbol].no!.quantity)+Number(quantity);
+    STOCK_BALANCES[userId][stockSymbol].yes!.quantity = Number(STOCK_BALANCES[userId][stockSymbol].yes!.quantity) + Number(quantity);
+    STOCK_BALANCES[userId][stockSymbol].no!.quantity = Number(STOCK_BALANCES[userId][stockSymbol].no!.quantity) + Number(quantity);
 
     // Unlock funds
     INR_BALANCES[userId].locked -= requiredBalance;
@@ -201,8 +201,8 @@ app.post('/order/sell', (req: Request, res: Response) => {
     // Initialize the stockSymbol with empty yes/no objects if it doesn't exist
     res.status(400).send(`Market of ${stockSymbol} does not exist`)
   }
-  
-  
+
+
   if (stockType != "yes" && stockType != "no") {
     res.status(400).send({ message: "Invalid stock type" });
   }
@@ -234,7 +234,7 @@ app.post('/order/sell', (req: Request, res: Response) => {
 
       //      }
       // })
-     // Ensure the price exists in the 'yes' side of the order book
+      // Ensure the price exists in the 'yes' side of the order book
       if (ORDERBOOK[stockSymbol].yes[price]) {
         // Price exists, so update the total and the specific user's order
         ORDERBOOK[stockSymbol].yes[price].total += Number(quantity);
@@ -243,7 +243,7 @@ app.post('/order/sell', (req: Request, res: Response) => {
         if (ORDERBOOK[stockSymbol].yes[price].orders[userId]) {
           ORDERBOOK[stockSymbol].yes[price].orders[userId] += Number(quantity);
         } else {
-          ORDERBOOK[stockSymbol].yes[price].orders[userId] =Number(quantity);
+          ORDERBOOK[stockSymbol].yes[price].orders[userId] = Number(quantity);
         }
 
         res.send(`sell order for yes stocks for ${userId} placed in ${stockSymbol} market`)
@@ -258,10 +258,10 @@ app.post('/order/sell', (req: Request, res: Response) => {
         res.send(`sell order for yes stocks for ${userId} placed in ${stockSymbol} market`)
       }
 
-    }else{
+    } else {
       res.send("Sorry u don't have sufficient stockBalance")
     }
-  }else{
+  } else {
     if (STOCK_BALANCES[userId][stockSymbol].no!.quantity >= quantity) {
 
       STOCK_BALANCES[userId][stockSymbol].no!.locked += Number(quantity)
@@ -285,7 +285,7 @@ app.post('/order/sell', (req: Request, res: Response) => {
 
       //      }
       // })
-     // Ensure the price exists in the 'yes' side of the order book
+      // Ensure the price exists in the 'yes' side of the order book
       if (ORDERBOOK[stockSymbol].no[price]) {
         // Price exists, so update the total and the specific user's order
         ORDERBOOK[stockSymbol].no[price].total += Number(quantity);
@@ -294,7 +294,7 @@ app.post('/order/sell', (req: Request, res: Response) => {
         if (ORDERBOOK[stockSymbol].no[price].orders[userId]) {
           ORDERBOOK[stockSymbol].no[price].orders[userId] += Number(quantity);
         } else {
-          ORDERBOOK[stockSymbol].no[price].orders[userId] =Number(quantity);
+          ORDERBOOK[stockSymbol].no[price].orders[userId] = Number(quantity);
         }
 
         res.send(`sell order for no stocks for  ${userId} placed in ${stockSymbol} market`)
@@ -309,12 +309,36 @@ app.post('/order/sell', (req: Request, res: Response) => {
         res.send(`sell order for no stocks for ${userId} placed in ${stockSymbol} market`)
       }
 
-    }else{
+    } else {
       res.send("Sorry u don't have sufficient stockBalance")
     }
   }
 })
 
+app.post('/order/buy', (req: Request, res: Response) => {
+  const { userId,
+    stockSymbol,
+    quantity,
+    price,
+    stockType } = req.body
+
+    if(!ORDERBOOK[stockSymbol]){
+      res.status(404).send(`{stockSymbol} market doesn't exist`)
+    }
+    
+
+    const requiredBalance =  price*quantity
+
+    if(requiredBalance<INR_BALANCES[userId].balance){
+      res.send(`{userId} doesn't have sufficient balance to buy these stocks`)
+    }
+    
+    
+     
+    
+
+
+})
 
 
 app.listen(port, () => {
