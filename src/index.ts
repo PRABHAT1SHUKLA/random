@@ -346,6 +346,13 @@ app.post('/order/buy', async(req: Request, res: Response) => {
           price,
           stockType:"no"
         });
+        res.send("Order placed in orderBook , waiting for a match")
+      }
+      //partial matching case 
+
+      if(stockType=="yes" && ORDERBOOK[stockSymbol].yes[price].total<quantity){
+       
+
       }
 
     }
@@ -354,6 +361,90 @@ app.post('/order/buy', async(req: Request, res: Response) => {
 
 
 })
+
+app.post('/order/buy', async (req: Request, res: Response) => {
+  const { userId, stockSymbol, quantity, price, stockType } = req.body;
+
+  // Ensure the stock symbol exists in the ORDERBOOK
+  if (!ORDERBOOK[stockSymbol]) {
+    return res.status(404).send(`${stockSymbol} market doesn't exist`);
+  }
+
+  const requiredBalance = price * quantity;
+
+  // Check if the user has sufficient balance
+  if (INR_BALANCES[userId].balance < requiredBalance) {
+    return res.status(400).send(`${userId} doesn't have sufficient balance to buy these stocks`);
+  }
+
+  // Deduct balance and lock funds
+  INR_BALANCES[userId].balance -= requiredBalance;
+  INR_BALANCES[userId].locked += requiredBalance;
+
+  // Handle 'yes' stockType
+  if (stockType === "yes") {
+    // Check if there is a matching sell order in the 'yes' order book
+    if (ORDERBOOK[stockSymbol].yes[price]) {
+      const availableQuantity = ORDERBOOK[stockSymbol].yes[price].total;
+
+      if (availableQuantity >= quantity) {
+        // Full match case: complete the transaction
+        ORDERBOOK[stockSymbol].yes[price].total -= quantity;
+        ORDERBOOK[stockSymbol].yes[price].orders[userId] = (ORDERBOOK[stockSymbol].yes[price].orders[userId] || 0) + quantity;
+
+        return res.send(`Successfully bought ${quantity} 'yes' stocks at price ${price}`);
+      } else {
+        // Partial match: buy whatever is available and place the rest in the reverse order book (for 'no')
+        const remainingQuantity = quantity - availableQuantity;
+        ORDERBOOK[stockSymbol].yes[price].total = 0; // all sold
+
+        // Reverse the order and place the remaining in the 'no' order book
+        ORDERBOOK[stockSymbol].no[price] = ORDERBOOK[stockSymbol].no[price] || { total: 0, orders: {} };
+        ORDERBOOK[stockSymbol].no[price].total += remainingQuantity;
+        ORDERBOOK[stockSymbol].no[price].orders[userId] = (ORDERBOOK[stockSymbol].no[price].orders[userId] || 0) + remainingQuantity;
+
+        return res.send(`Partial match: bought ${availableQuantity} 'yes' stocks, remaining ${remainingQuantity} placed in 'no' order book`);
+      }
+    } else {
+      // No match in 'yes', place the order in the 'no' order book
+      ORDERBOOK[stockSymbol].no[price] = ORDERBOOK[stockSymbol].no[price] || { total: 0, orders: {} };
+      ORDERBOOK[stockSymbol].no[price].total += quantity;
+      ORDERBOOK[stockSymbol].no[price].orders[userId] = (ORDERBOOK[stockSymbol].no[price].orders[userId] || 0) + quantity;
+
+      return res.send(`No 'yes' orders available, placed buy order in 'no' order book for ${quantity} stocks at price ${price}`);
+    }
+  }
+
+  // Handle 'no' stockType (similar logic)
+  if (stockType === "no") {
+    if (ORDERBOOK[stockSymbol].no[price]) {
+      const availableQuantity = ORDERBOOK[stockSymbol].no[price].total;
+
+      if (availableQuantity >= quantity) {
+        ORDERBOOK[stockSymbol].no[price].total -= quantity;
+        ORDERBOOK[stockSymbol].no[price].orders[userId] = (ORDERBOOK[stockSymbol].no[price].orders[userId] || 0) + quantity;
+
+        return res.send(`Successfully bought ${quantity} 'no' stocks at price ${price}`);
+      } else {
+        const remainingQuantity = quantity - availableQuantity;
+        ORDERBOOK[stockSymbol].no[price].total = 0;
+
+        ORDERBOOK[stockSymbol].yes[price] = ORDERBOOK[stockSymbol].yes[price] || { total: 0, orders: {} };
+        ORDERBOOK[stockSymbol].yes[price].total += remainingQuantity;
+        ORDERBOOK[stockSymbol].yes[price].orders[userId] = (ORDERBOOK[stockSymbol].yes[price].orders[userId] || 0) + remainingQuantity;
+
+        return res.send(`Partial match: bought ${availableQuantity} 'no' stocks, remaining ${remainingQuantity} placed in 'yes' order book`);
+      }
+    } else {
+      ORDERBOOK[stockSymbol].yes[price] = ORDERBOOK[stockSymbol].yes[price] || { total: 0, orders: {} };
+      ORDERBOOK[stockSymbol].yes[price].total += quantity;
+      ORDERBOOK[stockSymbol].yes[price].orders[userId] = (ORDERBOOK[stockSymbol].yes[price].orders[userId] || 0) + quantity;
+
+      return res.send(`No 'no' orders available, placed buy order in 'yes' order book for ${quantity} stocks at price ${price}`);
+    }
+  }
+});
+
 
 
 app.listen(port, () => {
